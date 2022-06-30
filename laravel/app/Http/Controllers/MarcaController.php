@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Storage;
 use App\Models\Marca;
 use Illuminate\Http\Request;
 
@@ -43,10 +44,16 @@ class MarcaController extends Controller
     public function store(Request $request)
     {
         $request->validate($this->marca->roles(), $this->marca->feedback());
+        
+        $image = $request->file("imagem");
+        $imagem_urn = $image->store("logos", "public");
 
-        $marca = $this->marca->create($request->all());
+        $marca = $this->marca->create([
+            "nome" => $request->nome,
+            "imagem" => $imagem_urn
+        ]);
 
-        return $marca;
+        return response()->json($marca, 201);
     }
 
     /**
@@ -108,7 +115,17 @@ class MarcaController extends Controller
             $request->validate($marca->roles(), $marca->feedback());
         }
 
-        $marca->update($request->all());
+        if ($request->file("imagem")) {
+            Storage::disk("public")->delete($marca->imagem);
+        }
+
+        $image = $request->file("imagem");
+        $imagem_urn = $image->store("logos", "public");
+
+        $marca->update([
+            "nome" => $request->nome,
+            "imagem" => $imagem_urn
+        ]);
         return $marca;
     }
 
@@ -121,11 +138,13 @@ class MarcaController extends Controller
      */
     public function destroy($id)
     {
-        // $marca->delete();
         $marca = $this->marca->find($id);
         if ($marca === null) {
             return response()->json(["error" => "Marca não existe!"], 404);
         }
+
+        Storage::disk("public")->delete($marca->imagem);
+
         $marca->delete();
         return ["msg" => "Marca removida com sucesso!"];
     }
