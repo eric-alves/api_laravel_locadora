@@ -19,20 +19,7 @@ class MarcaController extends Controller
      */
     public function index()
     {
-        // $response = Marca::all();
-        // return $response;
-
-        return $this->marca->all();
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
+        return response()->json($this->marca->with("modelos")->get(), 200);
     }
 
     /**
@@ -43,10 +30,10 @@ class MarcaController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate($this->marca->roles(), $this->marca->feedback());
+        $request->validate($this->marca->rules(), $this->marca->feedback());
         
         $image = $request->file("imagem");
-        $imagem_urn = $image->store("logos", "public");
+        $imagem_urn = $image->store("imagens/logos", "public");
 
         $marca = $this->marca->create([
             "nome" => $request->nome,
@@ -65,22 +52,11 @@ class MarcaController extends Controller
      */
     public function show($id)
     {
-        $marca = $this->marca->find($id);
+        $marca = $this->marca->with("modelos")->find($id);
         if ($marca === null) {
             return response()->json(["error" => "Marca não existe!"], 404);
         }
-        return $marca;
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Marca  $marca
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Marca $marca)
-    {
-        //
+        return response()->json($marca, 200);
     }
 
     /**
@@ -101,32 +77,37 @@ class MarcaController extends Controller
             return response()->json(["error" => "Marca não existe!"], 404);
         }
 
-        $dynamicRoles = array();
+        $dynamicRules = array();
 
         if ($request->method() === 'PATCH') {
-            foreach ($marca->roles() as $input => $roles) {
+            foreach ($marca->rules() as $input => $rules) {
                 if (array_key_exists($input, $request->all())) {
-                    $dynamicRoles[$input] = $roles;
+                    $dynamicRules[$input] = $rules;
                 }
             }
 
-            $request->validate($dynamicRoles, $marca->feedback());
+            $request->validate($dynamicRules, $marca->feedback());
         } else {
-            $request->validate($marca->roles(), $marca->feedback());
+            $request->validate($marca->rules(), $marca->feedback());
         }
+
+        // Copia os campos exitentes em REQUEST para o OBJ MARCA
+        $marca->fill($request->all());
 
         if ($request->file("imagem")) {
             Storage::disk("public")->delete($marca->imagem);
+            $imagem = $request->file("imagem");
+            $imagem_urn = $imagem->store("imagens/logos", "public");
+            $marca->imagem = $imagem_urn;
         }
+        
+        $marca->save();
 
-        $image = $request->file("imagem");
-        $imagem_urn = $image->store("logos", "public");
-
-        $marca->update([
-            "nome" => $request->nome,
-            "imagem" => $imagem_urn
-        ]);
-        return $marca;
+        // $marca->update([
+        //     "nome" => $request->nome,
+        //     "imagem" => $imagem_urn
+        // ]);
+        return response()->json($marca, 200);
     }
 
     /**

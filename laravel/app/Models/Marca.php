@@ -10,7 +10,7 @@ class Marca extends Model
     use HasFactory;
     protected $fillable = ["nome", "imagem"];
 
-    public function roles(){
+    public function rules(){
         return [
             "nome" => "required|unique:marcas,nome,".$this->id."min:3",
             "imagem" => "required|file|mimes:png"
@@ -23,5 +23,10 @@ class Marca extends Model
             "nome.unique" => "O nome da marca já existe",
             "imagem.mimes" => "O arquivo deve ser do tipo PNG"
         ];
+    }
+
+    // Uma MARCA possui vários MODELOS
+    public function modelos(){
+        return $this->hasMany("App\Models\Modelo");
     }
 }
