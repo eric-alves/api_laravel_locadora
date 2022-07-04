@@ -22,7 +22,7 @@ class ModeloController extends Controller
         $modeloRepository = new ModeloRepository($this->modelo);
 
         if ($request->has("atributos_marca")) {
-            $atributos_marca = 'marca:id,'.$request->atributos_marca;
+            $atributos_marca = 'marca:carro_id,'.$request->atributos_marca;
             $modeloRepository->selectAtributosRegistrosRelacionados($atributos_marca);
         }else {
             $modeloRepository->selectAtributosRegistrosRelacionados("marca");
